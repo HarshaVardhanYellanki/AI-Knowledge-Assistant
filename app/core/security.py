@@ -4,8 +4,10 @@ from datetime import datetime, timedelta, UTC
 import jwt
 from bson import ObjectId
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends
+
+security = HTTPBearer()
 
 from app.database.mongodb import users_collection
 
@@ -17,9 +19,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
     os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
 )
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/auth/login"
-)
+security = HTTPBearer()
 
 
 def create_access_token(user_id: str):
@@ -59,10 +59,9 @@ def verify_access_token(token: str):
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme)
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
-
-    payload = verify_access_token(token)
+    payload = verify_access_token(credentials.credentials)
 
     user_id = payload.get("sub")
 

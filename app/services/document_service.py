@@ -5,6 +5,13 @@ from datetime import datetime, UTC
 from fastapi import HTTPException, UploadFile, status
 
 from app.database.mongodb import documents_collection
+from app.services.document_processor import extract_text
+from app.services.chunking_service import chunk_text
+from app.services.embedding_service import generate_embeddings
+from app.services.vector_store_service import (
+    create_collection,
+    store_embeddings,
+)
 
 
 UPLOAD_FOLDER = "uploads"
@@ -58,6 +65,23 @@ async def upload_document(
     result = await documents_collection.insert_one(
         document
     )
+
+    text = extract_text(file_path)
+
+    chunks = chunk_text(text)
+
+    embeddings = await generate_embeddings(chunks)
+
+    await create_collection()
+
+    await store_embeddings(
+    chunks,
+    embeddings,
+    {
+        "user_id": str(current_user["_id"]),
+        "document_id": str(result.inserted_id),
+    },
+)
 
     return {
         "message": "Document uploaded successfully",
