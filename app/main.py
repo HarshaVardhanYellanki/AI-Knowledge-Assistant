@@ -5,6 +5,7 @@ from app.routes.user_route import router as user_router
 from app.routes.document_route import router as document_router
 from app.routes.chat_route import router as chat_router
 
+
 app = FastAPI(
     title="AI Knowledge Assistant API",
     version="1.0.0"
