@@ -1,99 +1,139 @@
-# AI Knowledge Assistant
+# AI Knowledge Assistant (LangChain)
 
-A production-oriented Retrieval-Augmented Generation (RAG) backend built with FastAPI, MongoDB, OpenAI, and Qdrant.
+A secure Retrieval-Augmented Generation (RAG) application built with **FastAPI**, **LangChain**, **OpenAI**, **Qdrant**, and **MongoDB**.
 
-The application enables authenticated users to upload documents, index them as vector embeddings, and ask natural language questions answered using only their uploaded documents.
+The application enables authenticated users to upload documents and ask natural language questions. Each user's documents remain completely isolated using metadata-based filtering, ensuring private document retrieval.
 
 ---
 
 ## Features
 
 * JWT Authentication
-* User Registration & Login
-* Secure API Endpoints
-* Document Upload
-* PDF, DOCX and TXT Support
-* Automatic Text Extraction
-* Text Chunking
-* OpenAI Embedding Generation
-* Qdrant Vector Database Integration
+* User-specific document isolation
+* PDF, DOCX and TXT support
+* Automatic document chunking
+* OpenAI Embeddings
+* Qdrant Vector Database
 * Semantic Search
-* Retrieval-Augmented Generation (RAG)
-* User-wise Document Isolation
+* LangChain Retrieval Pipeline
+* Source Chunk References
+* FastAPI REST API
+* MongoDB document metadata storage
 
 ---
 
 ## Tech Stack
 
-### Backend
-
+* Python
 * FastAPI
-* Python 3.12
-
-### Database
-
-* MongoDB Atlas
-
-### Vector Database
-
+* LangChain
+* OpenAI
 * Qdrant
+* MongoDB
+* JWT Authentication
+* PyMuPDF
+* python-docx
 
-### AI
+---
 
-* OpenAI Embeddings
-* OpenAI Chat Models
+## Architecture
 
-### Authentication
-
-* JWT
-* Argon2 Password Hashing
+```text
+User
+   │
+   ▼
+Upload Document
+   │
+   ▼
+Document Loader
+(PyPDF / DOCX / TXT)
+   │
+   ▼
+RecursiveCharacterTextSplitter
+   │
+   ▼
+OpenAI Embeddings
+   │
+   ▼
+Qdrant Vector Store
+   │
+   ▼
+───────────────
+Question
+   │
+   ▼
+Retriever
+(User Metadata Filter)
+   │
+   ▼
+Prompt
+   │
+   ▼
+ChatOpenAI
+   │
+   ▼
+Answer + Sources
+```
 
 ---
 
 ## Project Structure
 
+```text
+app/
+│
+├── core/
+├── database/
+├── routes/
+├── schemas/
+├── services/
+│
+├── uploads/
+│
+main.py
+requirements.txt
+.env
 ```
-app
-├── core
-├── database
-├── routes
-├── schemas
-├── services
-├── main.py
 
-uploads/
+---
+
+## Environment Variables
+
+```env
+OPENAI_API_KEY=
+
+CHAT_MODEL=gpt-4.1-mini
+EMBEDDING_MODEL=text-embedding-3-small
+
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION=documents
+
+MONGODB_URI=
+DATABASE_NAME=
+
+JWT_SECRET_KEY=
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
 ```
 
 ---
 
 ## Installation
 
-Clone the repository
-
 ```bash
-git clone https://github.com/HarshaVardhanYellanki/AI-Knowledge-Assistant.git
+git clone <repository-url>
 
 cd AI-Knowledge-Assistant
-```
 
-Create a virtual environment
-
-```bash
 python -m venv venv
-```
 
-Activate
+source venv/bin/activate
+```
 
 Windows
 
 ```bash
 venv\Scripts\activate
-```
-
-Linux / macOS
-
-```bash
-source venv/bin/activate
 ```
 
 Install dependencies
@@ -102,171 +142,88 @@ Install dependencies
 pip install -r requirements.txt
 ```
 
----
+Start MongoDB
 
-## Environment Variables
-
-Create a `.env` file.
-
-```
-OPENAI_API_KEY=
-
-EMBEDDING_MODEL=
-
-CHAT_MODEL=
-
-SECRET_KEY=
-
-ALGORITHM=
-
-ACCESS_TOKEN_EXPIRE_MINUTES=
-
-MONGODB_URI=
-
-DATABASE_NAME=
-```
-
----
-
-## Running Qdrant
+Start Qdrant
 
 ```bash
-docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
+docker run -p 6333:6333 qdrant/qdrant
 ```
 
-Dashboard
-
-```
-http://localhost:6333/dashboard
-```
-
----
-
-## Run the API
+Run the application
 
 ```bash
-uvicorn app.main:app --reload
-```
-
-Swagger
-
-```
-http://127.0.0.1:8000/docs
+uvicorn main:app --reload
 ```
 
 ---
 
-## API Workflow
+## API Endpoints
 
-### 1. Register
+### Authentication
 
 ```
 POST /auth/register
-```
 
-### 2. Login
-
-```
 POST /auth/login
 ```
 
-### 3. Upload Document
+### User
+
+```
+GET /users/me
+```
+
+### Documents
 
 ```
 POST /documents/upload
+
+GET /documents
 ```
 
-Supported formats
-
-* PDF
-* DOCX
-* TXT
-
-The uploaded document is automatically
-
-* Extracted
-* Chunked
-* Embedded
-* Indexed in Qdrant
-
-### 4. Chat
+### Chat
 
 ```
 POST /chat
 ```
 
-Ask questions about your uploaded documents.
-
-The system retrieves the most relevant document chunks and generates answers using Retrieval-Augmented Generation (RAG).
-
 ---
 
-## RAG Pipeline
+## Retrieval Pipeline
 
-```
-User Upload
-      │
-      ▼
-Document Storage
-      │
-      ▼
-Text Extraction
-      │
-      ▼
-Chunking
-      │
-      ▼
-OpenAI Embeddings
-      │
-      ▼
-Qdrant Storage
-      │
-      ▼
-User Question
-      │
-      ▼
-Query Embedding
-      │
-      ▼
-Vector Search
-      │
-      ▼
-Relevant Chunks
-      │
-      ▼
-OpenAI Chat Model
-      │
-      ▼
-Answer
-```
+1. User uploads a document.
+2. Document is parsed using LangChain loaders.
+3. Text is split into semantic chunks.
+4. Chunks are converted into embeddings.
+5. Embeddings are stored in Qdrant.
+6. User asks a question.
+7. Relevant chunks are retrieved using metadata filtering.
+8. Retrieved context is sent to ChatOpenAI.
+9. Answer is returned with source references.
 
 ---
 
 ## Security
 
-* JWT Authentication
-* Protected Routes
-* Argon2 Password Hashing
-* User-level Document Isolation
-
-Each user retrieves information only from their own uploaded documents.
+* JWT-based authentication
+* User-level document isolation
+* Metadata-filtered vector search
+* Private retrieval per authenticated user
 
 ---
 
-## Future Enhancements
+## Future Improvements
 
-* Streaming Responses
-* Conversation History
-* LangChain Integration
-* LangGraph Agents
+* Streaming responses
 * Hybrid Search
-* Metadata Filtering
-* Background Document Processing
-* Citations & Source References
-* Multi-document Chat
+* Reranking
+* Document deletion
+* Multi-file upload
+* AWS deployment
 
 ---
 
 ## License
 
-This project is intended for educational and research purposes.
+MIT
